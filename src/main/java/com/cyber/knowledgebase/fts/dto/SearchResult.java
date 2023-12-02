@@ -7,14 +7,13 @@ import lombok.Setter;
 
 import java.time.LocalDateTime;
 import java.util.Objects;
-import java.util.UUID;
 
 @Getter
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
 public class SearchResult {
-    private UUID docId;
+    private Long id;
     private String docType;
     private String location;
     private LocalDateTime modified;
@@ -28,13 +27,13 @@ public class SearchResult {
 
         SearchResult that = (SearchResult) o;
 
-        if (!Objects.equals(docId, that.docId)) return false;
+        if (!Objects.equals(id, that.id)) return false;
         return Objects.equals(header, that.header);
     }
 
     @Override
     public int hashCode() {
-        int result = docId != null ? docId.hashCode() : 0;
+        int result = id != null ? id.hashCode() : 0;
         result = 31 * result + (header != null ? header.hashCode() : 0);
         return result;
     }

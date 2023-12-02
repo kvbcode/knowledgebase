@@ -6,41 +6,57 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.support.TransactionTemplate;
 
-import java.sql.Timestamp;
 import java.util.List;
 
 @Service
 public class PostgresTextSearchService {
-    private static final String INSERT_QUERY = """
+    private static final String INSERT_DOC_QUERY = """
             insert into ftsdocument
-              (doc_uid, doc_type, location, modified, title, content)
+              (doc_type, location, modified, title, content)
             values
-              (?, ?, ?, ?, ?, to_tsvector('russian', ?))
-            on conflict (location)
-              do update set modified=?, title=?, content=to_tsvector('russian', ?);
+              (?, ?, ?, ?, to_tsvector('russian', ?))
+            returning id;
+            """;
+
+    private static final String UPDATE_DOC_QUERY = """
+            update ftsdocument
+              set doc_type=?, modified=?, title=?, content=to_tsvector('russian', ?)
+            where
+              id = ?;
+            """;
+
+    private static final String DELETE_HEADERS_BY_DOCID = "delete from ftsheader where doc_id=?;";
+
+    private static final String INSERT_HEADER = "insert into ftsheader (doc_id, header) values (?,?);";
+
+    private static final String FIND_BY_LOCATION = """
+            select id, doc_type, location, modified, title
+            from ftsdocument
+            where location=?;
             """;
 
     private static final String SEARCH_QUERY = """
-            select doc_uid, doc_type, location, modified, title
+            select id, doc_type, location, modified, title
             from ftsdocument
             where make_tsvector(title, content) @@ plainto_tsquery(?);
             """;
 
     private static final String HEADERS_SEARCH_QUERY = """
-            select h.doc_uid, d.doc_type, d.location, d.modified, d.title, h.header
+            select d.id, d.doc_type, d.location, d.modified, d.title, h.header
             from ftsheader h
-            left join ftsdocument d on h.doc_uid = d.doc_uid
+            left join ftsdocument d on h.doc_id = d.id
             where to_tsvector('russian', h.header) @@ plainto_tsquery(?);
             """;
 
     private static final String SEARCH_ALL_QUERY = """
-            select h.doc_uid, d.doc_type, d.location, d.modified, d.title, h.header
+            select d.id, d.doc_type, d.location, d.modified, d.title, h.header
             from ftsheader h
-            left join ftsdocument d on h.doc_uid = d.doc_uid
+            left join ftsdocument d on h.doc_id = d.id
             where to_tsvector('russian', h.header) @@ plainto_tsquery(?)
             union
-            select doc_uid, doc_type, location, modified, title, '' as header
+            select id, doc_type, location, modified, title, '' as header
             from ftsdocument
             where make_tsvector(title, content) @@ plainto_tsquery(?);
             """;
@@ -48,19 +64,68 @@ public class PostgresTextSearchService {
     @Autowired
     JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    TransactionTemplate transactionTemplate;
+
     public void index(DocumentIndexRequest request) {
-        jdbcTemplate.update(INSERT_QUERY,
-                request.getDocId(),
+        indexInTransaction(request);
+    }
+
+    private void indexInTransaction(DocumentIndexRequest request) {
+        transactionTemplate.executeWithoutResult(ts -> {
+            SearchResult searchResult = findByLocation(request.getLocation());
+
+            if (searchResult == null) {
+                insert(request);
+            } else {
+                Long docId = searchResult.getId();
+                if (request.getModified().isAfter(searchResult.getModified())) {
+                    update(docId, request);
+                }
+            }
+        });
+    }
+
+    private Long insert(DocumentIndexRequest request) {
+        Long docId = jdbcTemplate.queryForObject(INSERT_DOC_QUERY, Long.class,
                 request.getDocType(),
                 request.getLocation(),
-                Timestamp.valueOf(request.getModified()),
-                request.getTitle(),
-                request.getContent(),
-                // on conflict update fields
                 request.getModified(),
                 request.getTitle(),
                 request.getContent()
         );
+        updateHeaders(docId, request.getHeaders());
+        return docId;
+    }
+
+    private void update(Long docId, DocumentIndexRequest request) {
+        jdbcTemplate.update(UPDATE_DOC_QUERY,
+                request.getDocType(),
+                request.getModified(),
+                request.getTitle(),
+                request.getContent(),
+                docId
+        );
+    }
+
+    private void updateHeaders(Long docId, List<String> headers) {
+        jdbcTemplate.update(DELETE_HEADERS_BY_DOCID, docId);
+
+        List<Object[]> batchArgs = headers.stream()
+                .map(h -> new Object[]{docId, h})
+                .toList();
+        jdbcTemplate.batchUpdate(INSERT_HEADER, batchArgs);
+    }
+
+    public SearchResult findByLocation(String location) {
+        List<SearchResult> resultList = jdbcTemplate.query(
+                FIND_BY_LOCATION,
+                BeanPropertyRowMapper.newInstance(SearchResult.class),
+                location
+        );
+        return resultList.isEmpty()
+                ? null
+                : resultList.iterator().next();
     }
 
     public List<SearchResult> search(String plainQuery) {

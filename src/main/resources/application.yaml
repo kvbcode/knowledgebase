@@ -11,3 +11,5 @@ logging:
         jdbc:
           core: TRACE
 
+debug: true
+

@@ -1,20 +1,21 @@
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 
 create table ftsdocument(
-    doc_uid uuid default gen_random_uuid(),
+    id bigserial,
     doc_type varchar(20) not null default '',
     location varchar(1024) not null UNIQUE,
     modified timestamp not null default CURRENT_TIMESTAMP,
-    title text not null default '',
+    title varchar(512) not null default '',
     content tsvector not null,
-    primary key (doc_uid)
+    primary key (id)
 );
 
 create table ftsheader(
-    doc_uid uuid not null,
-    header text not null,
-    primary key (doc_uid),
-    foreign key (doc_uid) references ftsdocument (doc_uid)
+    id bigserial,
+    doc_id bigserial,
+    header varchar(512) not null,
+    primary key (id),
+    foreign key (doc_id) references ftsdocument (id)
 );
 
 CREATE OR REPLACE FUNCTION make_tsvector(title TEXT, content tsvector)
