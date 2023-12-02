@@ -1,0 +1,13 @@
+spring:
+  datasource:
+    url: 'jdbc:postgresql://dbserver:5432/knowledgebase'
+    username: 'postgres'
+    password: 'postgres'
+
+logging:
+  level:
+    org:
+      springframework:
+        jdbc:
+          core: TRACE
+
