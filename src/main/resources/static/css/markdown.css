@@ -1,0 +1,40 @@
+body {
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  padding: 1em;
+  max-width: 1200px;
+  margin: auto;
+}
+code {
+  background-color: #eeeeee;
+  border-radius: 6px;
+  font-family: 'Courier New', Courier, monospace;
+}
+pre {
+  background-color: #eeeeee;
+  padding: 1em;
+  border-radius: 6px;
+}
+blockquote {
+  border-radius: 6px;
+  background-color: bisque;
+  margin: 15pt;
+}
+blockquote p{
+  background-color: floralwhite;
+  font-style: italic;
+  margin-left: 5pt;
+  padding-left: 10pt;
+  padding-right: 5pt;;
+}
+h1 {
+  font-size: 30pt;
+}
+h2 {
+  font-size: 24pt;
+}
+h3 {
+  font-size: 18pt;
+}
+h1 code, h2 code, h3 code, h4 code, h5 code{
+  padding: 1pt 5pt 1pt 5pt;
+}

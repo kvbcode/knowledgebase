@@ -16,7 +16,7 @@ import java.util.List;
 @Slf4j
 @SpringBootApplication
 public class FtsJdbcApplication {
-    
+
     @Autowired
     FileIndexService fileIndexService;
 
@@ -24,7 +24,7 @@ public class FtsJdbcApplication {
         SpringApplication.run(FtsJdbcApplication.class, args);
     }
 
-    @Bean
+    //@Bean
     public CommandLineRunner run1() {
         return args -> {
             List<String> sources = Files.readAllLines(Path.of("sources.txt"));

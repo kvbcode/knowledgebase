@@ -31,6 +31,12 @@ public class PostgresTextSearchService {
 
     private static final String INSERT_HEADER = "insert into ftsheader (doc_id, header) values (?,?);";
 
+    private static final String FIND_BY_ID = """
+            select id, doc_type, location, modified, title
+            from ftsdocument
+            where id=?;
+            """;
+
     private static final String FIND_BY_LOCATION = """
             select id, doc_type, location, modified, title
             from ftsdocument
@@ -115,6 +121,17 @@ public class PostgresTextSearchService {
                 .map(h -> new Object[]{docId, h})
                 .toList();
         jdbcTemplate.batchUpdate(INSERT_HEADER, batchArgs);
+    }
+
+    public SearchResult findById(Long id) {
+        List<SearchResult> resultList = jdbcTemplate.query(
+                FIND_BY_ID,
+                BeanPropertyRowMapper.newInstance(SearchResult.class),
+                id
+        );
+        return resultList.isEmpty()
+                ? null
+                : resultList.iterator().next();
     }
 
     public SearchResult findByLocation(String location) {
