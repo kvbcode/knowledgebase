@@ -27,12 +27,19 @@ public class FtsJdbcApplication {
     }
 
 
-    @Scheduled(fixedDelay = 1, timeUnit = TimeUnit.HOURS)
-    public void runIndexTask() throws IOException {
-        log.info("run index task");
+    @Scheduled(fixedDelay = 60, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
+    public void runTaskIndex() throws IOException {
+        log.debug("run task: index locations");
         List<String> sources = Files.readAllLines(Path.of("sources.txt"));
         for (String item : sources) {
             fileIndexService.scanDirectory(Path.of(item));
         }
+    }
+
+    @Scheduled(fixedDelay = 60, timeUnit = TimeUnit.MINUTES, initialDelay = 5)
+    public void runTaskRemoveUnavailableLocation() {
+        log.debug("run task: remove unavailable locations");
+        long count = fileIndexService.removeUnavailableEntries();
+        log.debug("removed unavailable locations: " + count);
     }
 }

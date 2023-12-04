@@ -11,6 +11,8 @@ import org.springframework.transaction.support.TransactionTemplate;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
+import java.util.stream.Stream;
 
 @Service
 public class PostgresTextSearchService {
@@ -29,9 +31,17 @@ public class PostgresTextSearchService {
               id = :id;
             """;
 
-    private static final String DELETE_HEADERS_BY_DOCID = "delete from ftsheader where doc_id=:id;";
+    private static final String DELETE_BY_IDS = "delete from ftsdocument where id in (:ids);";
+
+    private static final String DELETE_HEADERS_BY_DOC_IDS = "delete from ftsheader where doc_id in (:doc_ids);";
 
     private static final String INSERT_HEADER = "insert into ftsheader (doc_id, header) values (:doc_id,:header);";
+
+
+    private static final String FIND_ALL = """
+            select id, doc_type, location, modified, title
+            from ftsdocument;
+            """;
 
     private static final String FIND_BY_ID = """
             select id, doc_type, location, modified, title
@@ -81,16 +91,14 @@ public class PostgresTextSearchService {
 
     private void indexInTransaction(DocumentIndexRequest request) {
         transactionTemplate.executeWithoutResult(ts -> {
-            SearchResult searchResult = findByLocation(request.getLocation());
-
-            if (searchResult == null) {
-                insert(request);
-            } else {
-                Long docId = searchResult.getId();
-                if (request.getModified().isAfter(searchResult.getModified())) {
-                    update(docId, request);
-                }
-            }
+            findByLocation(request.getLocation())
+                    .ifPresentOrElse(searchResult -> {
+                                if (request.getModified().isAfter(searchResult.getModified())) {
+                                    update(searchResult.getId(), request);
+                                }
+                            },
+                            () -> insert(request)
+                    );
         });
     }
 
@@ -119,7 +127,7 @@ public class PostgresTextSearchService {
     }
 
     private void updateHeaders(Long docId, List<String> headers) {
-        jdbcTemplate.update(DELETE_HEADERS_BY_DOCID, new MapSqlParameterSource("id", docId));
+        jdbcTemplate.update(DELETE_HEADERS_BY_DOC_IDS, new MapSqlParameterSource("doc_ids", List.of(docId)));
 
         MapSqlParameterSource[] batchInsertArgs = headers.stream()
                 .map(header -> new MapSqlParameterSource()
@@ -129,6 +137,21 @@ public class PostgresTextSearchService {
                 .toArray(MapSqlParameterSource[]::new);
 
         jdbcTemplate.batchUpdate(INSERT_HEADER, batchInsertArgs);
+    }
+
+    public void deleteByIds(Collection<Long> ids) {
+        transactionTemplate.executeWithoutResult(ts -> {
+            jdbcTemplate.update(DELETE_HEADERS_BY_DOC_IDS, new MapSqlParameterSource("doc_ids", ids));
+            jdbcTemplate.update(DELETE_BY_IDS, new MapSqlParameterSource("ids", ids));
+        });
+    }
+
+    public Stream<SearchResult> findAll() {
+        return jdbcTemplate.queryForStream(
+                FIND_ALL,
+                new MapSqlParameterSource(),
+                BeanPropertyRowMapper.newInstance(SearchResult.class)
+        );
     }
 
     public SearchResult findById(Long id) {
@@ -142,15 +165,13 @@ public class PostgresTextSearchService {
                 : resultList.iterator().next();
     }
 
-    public SearchResult findByLocation(String location) {
-        List<SearchResult> resultList = findByLocationList(List.of(location));
-        return resultList.isEmpty()
-                ? null
-                : resultList.iterator().next();
+    public Optional<SearchResult> findByLocation(String location) {
+        return findByLocationList(List.of(location))
+                .findAny();
     }
 
-    public List<SearchResult> findByLocationList(Collection<String> locationList) {
-        return jdbcTemplate.query(
+    public Stream<SearchResult> findByLocationList(Collection<String> locationList) {
+        return jdbcTemplate.queryForStream(
                 FIND_BY_LOCATIONS,
                 new MapSqlParameterSource("locations", locationList),
                 BeanPropertyRowMapper.newInstance(SearchResult.class)

@@ -37,6 +37,29 @@ public class FileIndexService {
     @Autowired
     DocumentIndexRequestParserChain documentIndexRequestParserChain;
 
+    public long removeUnavailableEntries() {
+        ArrayList<Long> idsBatch = new ArrayList<>(BATCH_SIZE);
+
+        indexerService.findAll()
+                .filter(searchResult -> !isLocationAvailable(searchResult.getLocationURI()))
+                .map(searchResult -> searchResult.getId())
+                .forEach(id -> {
+                    idsBatch.add(id);
+                    if (idsBatch.size() == BATCH_SIZE) {
+                        indexerService.deleteByIds(idsBatch);
+                        idsBatch.clear();
+                    }
+                });
+        if (!idsBatch.isEmpty()) indexerService.deleteByIds(idsBatch);
+
+        return idsBatch.size();
+    }
+
+    private boolean isLocationAvailable(URI location) {
+        Path path = Path.of(location);
+        return Files.exists(path);
+    }
+
     public void scanDirectory(Path dir) throws IOException {
         ArrayList<ModifiedLocation> modifiedLocations = new ArrayList<>(BATCH_SIZE);
 
@@ -76,20 +99,20 @@ public class FileIndexService {
                 .map(String::valueOf)
                 .toList();
 
-        Map<URI, LocalDateTime> fileLocationTimeMap = modifiedLocations.stream()
-                .collect(Collectors.toMap(ModifiedLocation::location, ModifiedLocation::lastModified));
+        Map<URI, LocalDateTime> resultsTimeMap = indexerService.findByLocationList(locationList)
+                .collect(Collectors.toMap(SearchResult::getLocationURI, SearchResult::getModified));
 
-        List<SearchResult> searchResults = indexerService.findByLocationList(locationList);
-
-        for (SearchResult searchResult : searchResults) {
-            URI location = URI.create(searchResult.getLocation());
-            LocalDateTime lastModified = fileLocationTimeMap.get(location);
+        for (ModifiedLocation modifiedLocation : modifiedLocations) {
+            URI location = modifiedLocation.location();
+            LocalDateTime fileTime = modifiedLocation.lastModified();
+            LocalDateTime dbTime = resultsTimeMap.get(location);
             Path file = Path.of(location);
 
-            if (isUpdateNeeded(searchResult, lastModified)) {
+
+            if (isUpdateNeeded(fileTime, dbTime)) {
                 byte[] content = Files.readAllBytes(file);
                 Optional<DocumentIndexRequest> documentIndexRequest =
-                        documentIndexRequestParserChain.parse(location, lastModified, content);
+                        documentIndexRequestParserChain.parse(location, fileTime, content);
                 documentIndexRequest.ifPresent(indexerService::index);
                 successCount++;
             }
@@ -97,10 +120,10 @@ public class FileIndexService {
         return successCount;
     }
 
-    private boolean isUpdateNeeded(SearchResult searchResult, LocalDateTime lastModified) {
-        if (searchResult == null) return true;
-        LocalDateTime dbTime = searchResult.getModified().withNano(0);
-        LocalDateTime fileTime = lastModified.withNano(0);
+    private boolean isUpdateNeeded(LocalDateTime fileTime, LocalDateTime dbTime) {
+        if (dbTime == null) return true;
+        dbTime = dbTime.withNano(0);
+        fileTime = fileTime.withNano(0);
         return fileTime.isAfter(dbTime);
     }
 

@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
+import java.net.URI;
 import java.time.LocalDateTime;
 import java.util.Objects;
 
@@ -19,6 +20,10 @@ public class SearchResult {
     private LocalDateTime modified;
     private String title;
     private String header = "";
+
+    public URI getLocationURI() {
+        return URI.create(getLocation());
+    }
 
     @Override
     public boolean equals(Object o) {

@@ -17,6 +17,8 @@ logging:
       springframework:
         jdbc:
           core: TRACE
+    com:
+      cyber: TRACE
 
 debug: true
 
