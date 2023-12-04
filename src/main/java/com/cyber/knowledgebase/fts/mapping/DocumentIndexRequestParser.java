@@ -8,5 +8,6 @@ import java.util.Optional;
 
 public interface DocumentIndexRequestParser {
     boolean isSupported(URI location);
+
     Optional<DocumentIndexRequest> parse(URI location, LocalDateTime modified, byte[] content);
 }

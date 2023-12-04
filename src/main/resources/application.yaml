@@ -4,6 +4,13 @@ spring:
     username: 'postgres'
     password: 'postgres'
 
+server:
+  servlet:
+    encoding:
+      charset: UTF-8
+      enabled: true
+      force: true
+
 logging:
   level:
     org:

@@ -1,7 +1,6 @@
 package com.cyber.knowledgebase.fts.mapping.impl;
 
 import com.cyber.knowledgebase.fts.mapping.DocumentIndexRequestParser;
-import org.springframework.stereotype.Component;
 
 import java.net.URI;
 import java.util.List;
@@ -11,7 +10,7 @@ public abstract class AbstractDocumentIndexRequestParser implements DocumentInde
     @Override
     public boolean isSupported(URI location) {
         String filename = getFilenameFromURI(location).toLowerCase();
-        for(String extension: getSupportedFileExtensions()) {
+        for (String extension : getSupportedFileExtensions()) {
             if (filename.endsWith(extension)) return true;
         }
         return false;

@@ -18,19 +18,12 @@ public class SearchController {
 
     @CrossOrigin
     @GetMapping(path = "/search")
-    public List<SearchResult> search(@RequestParam("q") String query){
+    public List<SearchResult> search(@RequestParam("q") String query) {
         List<SearchResult> searchResults = searchService.searchAll(query);
         searchResults.forEach(item -> {
             item.setLocation("http://cyberwork:8080/res/" + item.getId() + "/");
         });
         return searchResults;
     }
-
-    @CrossOrigin
-    @GetMapping(path = "/search2")
-    public List<SearchResult> search2(@RequestParam("q") String query){
-        return searchService.search(query);
-    }
-
 
 }

@@ -32,7 +32,7 @@ public class HtmlToDocumentIndexRequestParser extends AbstractDocumentIndexReque
         indexRequest.setModified(modified);
         indexRequest.setTitle(htmlDoc.title().trim());
 
-        if (indexRequest.getTitle().isEmpty()){
+        if (indexRequest.getTitle().isEmpty()) {
             indexRequest.setTitle(getFilenameFromURI(location));
         }
 
@@ -44,7 +44,7 @@ public class HtmlToDocumentIndexRequestParser extends AbstractDocumentIndexReque
             indexRequest.setContent(htmlDoc.body().text());
         }
 
-        if (indexRequest.getContent() == null || indexRequest.getContent().isBlank()){
+        if (indexRequest.getContent() == null || indexRequest.getContent().isBlank()) {
             return Optional.empty();
         }
 

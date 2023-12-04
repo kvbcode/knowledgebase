@@ -1,10 +1,6 @@
 package com.cyber.knowledgebase.fts.mapping.impl;
 
 import com.cyber.knowledgebase.fts.dto.DocumentIndexRequest;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;

@@ -4,10 +4,12 @@ import com.cyber.knowledgebase.fts.dto.DocumentIndexRequest;
 import com.cyber.knowledgebase.fts.dto.SearchResult;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
-import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
+import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.support.TransactionTemplate;
 
+import java.util.Collection;
 import java.util.List;
 
 @Service
@@ -16,7 +18,7 @@ public class PostgresTextSearchService {
             insert into ftsdocument
               (doc_type, location, modified, title, content)
             values
-              (?, ?, ?, ?, to_tsvector('russian', ?))
+              (:doc_type, :location, :modified, :title, to_tsvector('russian', :content))
             returning id;
             """;
 
@@ -24,51 +26,51 @@ public class PostgresTextSearchService {
             update ftsdocument
               set doc_type=?, modified=?, title=?, content=to_tsvector('russian', ?)
             where
-              id = ?;
+              id = :id;
             """;
 
-    private static final String DELETE_HEADERS_BY_DOCID = "delete from ftsheader where doc_id=?;";
+    private static final String DELETE_HEADERS_BY_DOCID = "delete from ftsheader where doc_id=:id;";
 
-    private static final String INSERT_HEADER = "insert into ftsheader (doc_id, header) values (?,?);";
+    private static final String INSERT_HEADER = "insert into ftsheader (doc_id, header) values (:doc_id,:header);";
 
     private static final String FIND_BY_ID = """
             select id, doc_type, location, modified, title
             from ftsdocument
-            where id=?;
+            where id=:id;
             """;
 
-    private static final String FIND_BY_LOCATION = """
+    private static final String FIND_BY_LOCATIONS = """
             select id, doc_type, location, modified, title
             from ftsdocument
-            where location=?;
+            where location in (:locations);
             """;
 
     private static final String SEARCH_QUERY = """
             select id, doc_type, location, modified, title
             from ftsdocument
-            where make_tsvector(title, content) @@ plainto_tsquery(?);
+            where make_tsvector(title, content) @@ plainto_tsquery(:query);
             """;
 
     private static final String HEADERS_SEARCH_QUERY = """
             select d.id, d.doc_type, d.location, d.modified, d.title, h.header
             from ftsheader h
             left join ftsdocument d on h.doc_id = d.id
-            where to_tsvector('russian', h.header) @@ plainto_tsquery(?);
+            where to_tsvector('russian', h.header) @@ plainto_tsquery(:query);
             """;
 
     private static final String SEARCH_ALL_QUERY = """
             select d.id, d.doc_type, d.location, d.modified, d.title, h.header
             from ftsheader h
             left join ftsdocument d on h.doc_id = d.id
-            where to_tsvector('russian', h.header) @@ plainto_tsquery(?)
+            where to_tsvector('russian', h.header) @@ plainto_tsquery(:query)
             union
             select id, doc_type, location, modified, title, '' as header
             from ftsdocument
-            where make_tsvector(title, content) @@ plainto_tsquery(?);
+            where make_tsvector(title, content) @@ plainto_tsquery(:query);
             """;
 
     @Autowired
-    JdbcTemplate jdbcTemplate;
+    NamedParameterJdbcTemplate jdbcTemplate;
 
     @Autowired
     TransactionTemplate transactionTemplate;
@@ -93,41 +95,47 @@ public class PostgresTextSearchService {
     }
 
     private Long insert(DocumentIndexRequest request) {
-        Long docId = jdbcTemplate.queryForObject(INSERT_DOC_QUERY, Long.class,
-                request.getDocType(),
-                request.getLocation(),
-                request.getModified(),
-                request.getTitle(),
-                request.getContent()
-        );
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("doc_type", request.getDocType())
+                .addValue("location", request.getLocation())
+                .addValue("modified", request.getModified())
+                .addValue("title", request.getTitle())
+                .addValue("content", request.getContent());
+
+        Long docId = jdbcTemplate.queryForObject(INSERT_DOC_QUERY, params, Long.class);
         updateHeaders(docId, request.getHeaders());
         return docId;
     }
 
     private void update(Long docId, DocumentIndexRequest request) {
-        jdbcTemplate.update(UPDATE_DOC_QUERY,
-                request.getDocType(),
-                request.getModified(),
-                request.getTitle(),
-                request.getContent(),
-                docId
-        );
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("doc_type", request.getDocType())
+                .addValue("modified", request.getModified())
+                .addValue("title", request.getTitle())
+                .addValue("content", request.getContent())
+                .addValue("id", docId);
+
+        jdbcTemplate.update(UPDATE_DOC_QUERY, params);
     }
 
     private void updateHeaders(Long docId, List<String> headers) {
-        jdbcTemplate.update(DELETE_HEADERS_BY_DOCID, docId);
+        jdbcTemplate.update(DELETE_HEADERS_BY_DOCID, new MapSqlParameterSource("id", docId));
 
-        List<Object[]> batchArgs = headers.stream()
-                .map(h -> new Object[]{docId, h})
-                .toList();
-        jdbcTemplate.batchUpdate(INSERT_HEADER, batchArgs);
+        MapSqlParameterSource[] batchInsertArgs = headers.stream()
+                .map(header -> new MapSqlParameterSource()
+                        .addValue("doc_id", docId)
+                        .addValue("header", header)
+                )
+                .toArray(MapSqlParameterSource[]::new);
+
+        jdbcTemplate.batchUpdate(INSERT_HEADER, batchInsertArgs);
     }
 
     public SearchResult findById(Long id) {
         List<SearchResult> resultList = jdbcTemplate.query(
                 FIND_BY_ID,
-                BeanPropertyRowMapper.newInstance(SearchResult.class),
-                id
+                new MapSqlParameterSource("id", id),
+                BeanPropertyRowMapper.newInstance(SearchResult.class)
         );
         return resultList.isEmpty()
                 ? null
@@ -135,38 +143,41 @@ public class PostgresTextSearchService {
     }
 
     public SearchResult findByLocation(String location) {
-        List<SearchResult> resultList = jdbcTemplate.query(
-                FIND_BY_LOCATION,
-                BeanPropertyRowMapper.newInstance(SearchResult.class),
-                location
-        );
+        List<SearchResult> resultList = findByLocationList(List.of(location));
         return resultList.isEmpty()
                 ? null
                 : resultList.iterator().next();
     }
 
+    public List<SearchResult> findByLocationList(Collection<String> locationList) {
+        return jdbcTemplate.query(
+                FIND_BY_LOCATIONS,
+                new MapSqlParameterSource("locations", locationList),
+                BeanPropertyRowMapper.newInstance(SearchResult.class)
+        );
+    }
+
     public List<SearchResult> search(String plainQuery) {
         return jdbcTemplate.query(
                 SEARCH_QUERY,
-                BeanPropertyRowMapper.newInstance(SearchResult.class),
-                plainQuery
+                new MapSqlParameterSource("query", plainQuery),
+                BeanPropertyRowMapper.newInstance(SearchResult.class)
         );
     }
 
     public List<SearchResult> searchHeaders(String plainQuery) {
         return jdbcTemplate.query(
                 HEADERS_SEARCH_QUERY,
-                BeanPropertyRowMapper.newInstance(SearchResult.class),
-                plainQuery
+                new MapSqlParameterSource("query", plainQuery),
+                BeanPropertyRowMapper.newInstance(SearchResult.class)
         );
     }
 
     public List<SearchResult> searchAll(String plainQuery) {
         return jdbcTemplate.query(
                 SEARCH_ALL_QUERY,
-                BeanPropertyRowMapper.newInstance(SearchResult.class),
-                plainQuery,
-                plainQuery
+                new MapSqlParameterSource("query", plainQuery),
+                BeanPropertyRowMapper.newInstance(SearchResult.class)
         );
     }
 
