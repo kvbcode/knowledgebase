@@ -4,7 +4,6 @@ import com.cyber.knowledgebase.fts.dto.DocumentIndexRequest;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,10 +23,10 @@ public class DocumentIndexRequestParserChain {
         return false;
     }
 
-    public Optional<DocumentIndexRequest> parse(URI location, LocalDateTime modified, byte[] content) {
+    public Optional<DocumentIndexRequest> parse(URI location, byte[] content) {
         for (DocumentIndexRequestParser parser : parserList) {
             if (parser.isSupported(location)) {
-                Optional<DocumentIndexRequest> indexRequest = parser.parse(location, modified, content);
+                Optional<DocumentIndexRequest> indexRequest = parser.parse(location, content);
                 if (indexRequest.isPresent()) return indexRequest;
             }
         }

@@ -4,7 +4,6 @@ import com.cyber.knowledgebase.fts.dto.DocumentIndexRequest;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,12 +16,12 @@ public class MarkdownToDocumentIndexRequestParser extends AbstractDocumentIndexR
         return SUPPORTED_EXTENSIONS;
     }
 
-    public Optional<DocumentIndexRequest> parse(URI location, LocalDateTime modified, byte[] content) {
+    @Override
+    public Optional<DocumentIndexRequest> parse(URI location, byte[] content) {
         DocumentIndexRequest doc = new DocumentIndexRequest();
         doc.setDocType(DOC_TYPE);
         doc.setLocation(location.toString());
         doc.setTitle(getFilenameFromURI(location));
-        doc.setModified(modified);
 
         String[] lines = new String(content).split("[\\n\\r]");
         StringBuilder contentBody = new StringBuilder();

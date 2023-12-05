@@ -1,6 +1,5 @@
 package com.cyber.knowledgebase.fts.service;
 
-import com.cyber.knowledgebase.fts.dto.DocumentIndexRequest;
 import com.cyber.knowledgebase.fts.dto.SearchResult;
 import com.cyber.knowledgebase.fts.mapping.DocumentIndexRequestParserChain;
 import com.cyber.knowledgebase.fts.postgres.PostgresTextSearchService;
@@ -103,21 +102,27 @@ public class FileIndexService {
                 .map(String::valueOf)
                 .toList();
 
-        Map<URI, LocalDateTime> resultsTimeMap = searchService.findByLocationList(locationList)
+        Map<URI, SearchResult> locationResultMap = searchService.findByLocationList(locationList)
                 .stream()
-                .collect(Collectors.toMap(SearchResult::getLocationURI, SearchResult::getModified));
+                .collect(Collectors.toMap(SearchResult::getLocationURI, v -> v));
 
         for (ModifiedLocation modifiedLocation : modifiedLocations) {
             URI location = modifiedLocation.location();
+            Optional<SearchResult> searchResultOpt = Optional.ofNullable(locationResultMap.get(location));
+
+            Long id = searchResultOpt.map(SearchResult::getId).orElse(null);
+            LocalDateTime dbTime = searchResultOpt.map(SearchResult::getModified).orElse(null);
             LocalDateTime fileTime = modifiedLocation.lastModified();
-            LocalDateTime dbTime = resultsTimeMap.get(location);
             Path file = Path.of(location);
 
             if (isUpdateNeeded(fileTime, dbTime)) {
                 byte[] content = Files.readAllBytes(file);
-                Optional<DocumentIndexRequest> documentIndexRequest =
-                        documentIndexRequestParserChain.parse(location, fileTime, content);
-                documentIndexRequest.ifPresent(indexService::index);
+                documentIndexRequestParserChain.parse(location, content)
+                        .ifPresent(docRequest -> {
+                            docRequest.setId(id);
+                            docRequest.setModified(fileTime);
+                            indexService.index(docRequest);
+                        });
                 successCount++;
             }
         }

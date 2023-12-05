@@ -23,7 +23,7 @@ public class PostgresTextIndexService implements TextIndexService {
 
     private static final String UPDATE_DOC_QUERY = """
             update ftsdocument
-              set doc_type=?, modified=?, title=?, content=to_tsvector('russian', ?)
+              set doc_type=:doc_type, modified=:modified, title=:title, content=to_tsvector('russian', :content)
             where
               id = :id;
             """;

@@ -8,7 +8,6 @@ import org.jsoup.select.Elements;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
-import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,7 +20,8 @@ public class HtmlToDocumentIndexRequestParser extends AbstractDocumentIndexReque
         return SUPPORTED_EXTENSIONS;
     }
 
-    public Optional<DocumentIndexRequest> parse(URI location, LocalDateTime modified, byte[] content) {
+    @Override
+    public Optional<DocumentIndexRequest> parse(URI location, byte[] content) {
         String htmlFileContent = new String(content);
         Document htmlDoc = Jsoup.parse(htmlFileContent);
         Elements headerElements = htmlDoc.select("h1, h2, h3, h4, h5, h6, h7, h8, h9");
@@ -29,7 +29,6 @@ public class HtmlToDocumentIndexRequestParser extends AbstractDocumentIndexReque
         DocumentIndexRequest indexRequest = new DocumentIndexRequest();
         indexRequest.setDocType(DOC_TYPE);
         indexRequest.setLocation(location.toString());
-        indexRequest.setModified(modified);
         indexRequest.setTitle(htmlDoc.title().trim());
 
         if (indexRequest.getTitle().isEmpty()) {
