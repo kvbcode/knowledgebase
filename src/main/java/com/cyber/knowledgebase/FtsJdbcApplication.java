@@ -1,4 +1,4 @@
-package com.cyber.knowledgebase.fts;
+package com.cyber.knowledgebase;
 
 import com.cyber.knowledgebase.fts.service.FileIndexService;
 import lombok.extern.slf4j.Slf4j;
@@ -26,8 +26,7 @@ public class FtsJdbcApplication {
         SpringApplication.run(FtsJdbcApplication.class, args);
     }
 
-
-    @Scheduled(fixedDelay = 60, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
+    @Scheduled(fixedDelay = 60, timeUnit = TimeUnit.MINUTES)
     public void runTaskIndex() throws IOException {
         log.debug("run task: index locations");
         List<String> sources = Files.readAllLines(Path.of("sources.txt"));
@@ -36,7 +35,7 @@ public class FtsJdbcApplication {
         }
     }
 
-    @Scheduled(fixedDelay = 60, timeUnit = TimeUnit.MINUTES, initialDelay = 5)
+    @Scheduled(fixedDelay = 60, timeUnit = TimeUnit.MINUTES, initialDelay = 1)
     public void runTaskRemoveUnavailableLocation() {
         log.debug("run task: remove unavailable locations");
         long count = fileIndexService.removeUnavailableEntries();

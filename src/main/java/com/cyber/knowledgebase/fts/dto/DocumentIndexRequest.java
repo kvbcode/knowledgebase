@@ -10,6 +10,7 @@ import java.util.List;
 @Getter
 @Setter
 public class DocumentIndexRequest {
+    private Long id;
     private String docType;
     private String location;
     private LocalDateTime modified;
@@ -21,13 +22,6 @@ public class DocumentIndexRequest {
         modified = LocalDateTime.now();
         docType = "";
         headers = new LinkedList<>();
-    }
-
-    public DocumentIndexRequest(String location, String title, String content) {
-        this();
-        this.location = location;
-        this.title = title;
-        this.content = content;
     }
 
     public void addHeader(String header) {

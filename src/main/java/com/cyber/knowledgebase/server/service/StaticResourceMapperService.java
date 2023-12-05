@@ -1,31 +1,29 @@
-package com.cyber.knowledgebase.fts.controller;
+package com.cyber.knowledgebase.server.service;
 
 import com.cyber.knowledgebase.fts.dto.SearchResult;
 import com.cyber.knowledgebase.fts.postgres.PostgresTextSearchService;
-import com.cyber.knowledgebase.fts.service.MarkDownService;
+import com.cyber.knowledgebase.server.exception.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileUrlResource;
 import org.springframework.core.io.Resource;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.stereotype.Service;
 import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-@RestController
-public class ResourceController {
+@Service
+public class StaticResourceMapperService {
     @Autowired
     PostgresTextSearchService searchService;
 
     @Autowired
     MarkDownService markDownService;
 
-    @GetMapping(path = "/res/{id}/")
     public Resource loadRootFile(@PathVariable Long id) {
-        SearchResult searchResult = searchService.findById(id);
-        if (searchResult == null) throw new RuntimeException("Not Found");
+        SearchResult searchResult = searchService.findById(id)
+                .orElseThrow(NotFoundException::new);
 
         String location = searchResult.getLocation();
         Resource urlResource = FileUrlResource.from(URI.create(location));
@@ -37,17 +35,11 @@ public class ResourceController {
         return urlResource;
     }
 
-    @GetMapping(path = "/res/{resourceId}/{resourceDir}/{resourceFile}")
-    public Resource loadDirResources(
-            @PathVariable Long resourceId,
-            @PathVariable String resourceDir,
-            @PathVariable String resourceFile
-    ) {
-        SearchResult searchResult = searchService.findById(resourceId);
-        if (searchResult == null) throw new RuntimeException("Not Found");
+    public Resource loadDirResources(Long resourceId, String resourceDir, String resourceFile) {
+        SearchResult searchResult = searchService.findById(resourceId)
+                .orElseThrow(NotFoundException::new);
 
-        String location = searchResult.getLocation();
-        URI fileUri = URI.create(location);
+        URI fileUri = searchResult.getLocationURI();
         Path workDir = Path.of(fileUri).getParent();
         Path filePath = workDir.resolve(resourceDir).resolve(resourceFile);
 
@@ -60,5 +52,6 @@ public class ResourceController {
 
         return FileUrlResource.from(filePath.toUri());
     }
+
 
 }

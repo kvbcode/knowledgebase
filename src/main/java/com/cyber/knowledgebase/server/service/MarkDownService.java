@@ -1,4 +1,4 @@
-package com.cyber.knowledgebase.fts.service;
+package com.cyber.knowledgebase.server.service;
 
 import com.vladsch.flexmark.ext.tables.TablesExtension;
 import com.vladsch.flexmark.html.HtmlRenderer;

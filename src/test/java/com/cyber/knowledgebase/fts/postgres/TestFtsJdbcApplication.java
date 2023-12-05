@@ -1,6 +1,6 @@
 package com.cyber.knowledgebase.fts.postgres;
 
-import com.cyber.knowledgebase.fts.FtsJdbcApplication;
+import com.cyber.knowledgebase.FtsJdbcApplication;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;

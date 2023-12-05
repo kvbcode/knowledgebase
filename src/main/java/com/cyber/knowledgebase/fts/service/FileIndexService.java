@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 @Slf4j
 @Service
@@ -32,7 +33,10 @@ public class FileIndexService {
     }
 
     @Autowired
-    PostgresTextSearchService indexerService;
+    TextIndexService indexService;
+
+    @Autowired
+    PostgresTextSearchService searchService;
 
     @Autowired
     DocumentIndexRequestParserChain documentIndexRequestParserChain;
@@ -40,18 +44,18 @@ public class FileIndexService {
     public long removeUnavailableEntries() {
         ArrayList<Long> idsBatch = new ArrayList<>(BATCH_SIZE);
 
-        indexerService.findAll()
-                .filter(searchResult -> !isLocationAvailable(searchResult.getLocationURI()))
-                .map(searchResult -> searchResult.getId())
-                .forEach(id -> {
-                    idsBatch.add(id);
-                    if (idsBatch.size() == BATCH_SIZE) {
-                        indexerService.deleteByIds(idsBatch);
-                        idsBatch.clear();
-                    }
-                });
-        if (!idsBatch.isEmpty()) indexerService.deleteByIds(idsBatch);
-
+        try (Stream<SearchResult> resultStream = searchService.findAll()) {
+            resultStream.filter(searchResult -> !isLocationAvailable(searchResult.getLocationURI()))
+                    .map(SearchResult::getId)
+                    .forEach(id -> {
+                        idsBatch.add(id);
+                        if (idsBatch.size() == BATCH_SIZE) {
+                            indexService.deleteByIds(idsBatch);
+                            idsBatch.clear();
+                        }
+                    });
+            if (!idsBatch.isEmpty()) indexService.deleteByIds(idsBatch);
+        }
         return idsBatch.size();
     }
 
@@ -99,7 +103,8 @@ public class FileIndexService {
                 .map(String::valueOf)
                 .toList();
 
-        Map<URI, LocalDateTime> resultsTimeMap = indexerService.findByLocationList(locationList)
+        Map<URI, LocalDateTime> resultsTimeMap = searchService.findByLocationList(locationList)
+                .stream()
                 .collect(Collectors.toMap(SearchResult::getLocationURI, SearchResult::getModified));
 
         for (ModifiedLocation modifiedLocation : modifiedLocations) {
@@ -108,12 +113,11 @@ public class FileIndexService {
             LocalDateTime dbTime = resultsTimeMap.get(location);
             Path file = Path.of(location);
 
-
             if (isUpdateNeeded(fileTime, dbTime)) {
                 byte[] content = Files.readAllBytes(file);
                 Optional<DocumentIndexRequest> documentIndexRequest =
                         documentIndexRequestParserChain.parse(location, fileTime, content);
-                documentIndexRequest.ifPresent(indexerService::index);
+                documentIndexRequest.ifPresent(indexService::index);
                 successCount++;
             }
         }
