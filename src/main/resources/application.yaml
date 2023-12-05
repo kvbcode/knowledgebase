@@ -3,6 +3,8 @@ spring:
     url: 'jdbc:postgresql://dbserver:5432/knowledgebase'
     username: 'postgres'
     password: 'postgres'
+  flyway:
+    locations: 'classpath:db/migration/{vendor}'
 
 server:
   servlet:
