@@ -1,4 +1,4 @@
-package com.cyber.knowledgebase.server.service;
+package com.cyber.knowledgebase.rest.service;
 
 import com.vladsch.flexmark.ext.tables.TablesExtension;
 import com.vladsch.flexmark.html.HtmlRenderer;
@@ -16,13 +16,13 @@ import java.util.Arrays;
 import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Service
-public class MarkDownService {
+public class MarkDownRenderService {
     private final String htmlTemplate;
 
     private final Parser parser;
     private final HtmlRenderer renderer;
 
-    public MarkDownService() {
+    public MarkDownRenderService() {
         MutableDataSet options = new MutableDataSet();
         options.set(Parser.EXTENSIONS, Arrays.asList(TablesExtension.create()));
         parser = Parser.builder(options).build();

@@ -1,3 +1,14 @@
+app:
+  resource:
+    location:
+      mapping:
+        pattern: 'http://localhost:8080/res/%d/'
+  search:
+    engine:
+      type: 'postgres'
+    result:
+      limit: 100
+
 spring:
   datasource:
     url: 'jdbc:postgresql://dbserver:5432/knowledgebase'

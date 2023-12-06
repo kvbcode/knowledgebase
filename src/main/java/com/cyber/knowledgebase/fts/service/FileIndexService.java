@@ -1,8 +1,8 @@
 package com.cyber.knowledgebase.fts.service;
 
 import com.cyber.knowledgebase.fts.dto.SearchResult;
-import com.cyber.knowledgebase.fts.mapping.DocumentIndexRequestParserChain;
-import com.cyber.knowledgebase.fts.postgres.PostgresTextSearchService;
+import com.cyber.knowledgebase.fts.mapping.DocumentParserChain;
+import com.cyber.knowledgebase.fts.service.impl.PostgresTextSearchService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -38,7 +38,7 @@ public class FileIndexService {
     PostgresTextSearchService searchService;
 
     @Autowired
-    DocumentIndexRequestParserChain documentIndexRequestParserChain;
+    DocumentParserChain documentParserChain;
 
     public long removeUnavailableEntries() {
         ArrayList<Long> idsBatch = new ArrayList<>(BATCH_SIZE);
@@ -72,7 +72,7 @@ public class FileIndexService {
                 LocalDateTime lastModified = LocalDateTime.ofInstant(attrs.lastModifiedTime().toInstant(), ZoneId.systemDefault());
                 URI location = file.toAbsolutePath().toUri();
 
-                if (documentIndexRequestParserChain.isSupported(location)) {
+                if (documentParserChain.isSupported(location)) {
                     modifiedLocations.add(new ModifiedLocation(location, lastModified));
                     if (modifiedLocations.size() == BATCH_SIZE) {
                         indexLocationsBatch(modifiedLocations);
@@ -117,7 +117,7 @@ public class FileIndexService {
 
             if (isUpdateNeeded(fileTime, dbTime)) {
                 byte[] content = Files.readAllBytes(file);
-                documentIndexRequestParserChain.parse(location, content)
+                documentParserChain.parse(location, content)
                         .ifPresent(docRequest -> {
                             docRequest.setId(id);
                             docRequest.setModified(fileTime);

@@ -1,8 +1,9 @@
-package com.cyber.knowledgebase.fts.postgres;
+package com.cyber.knowledgebase.fts.service.impl;
 
 import com.cyber.knowledgebase.fts.dto.DocumentIndexRequest;
 import com.cyber.knowledgebase.fts.service.TextIndexService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -12,6 +13,7 @@ import java.util.Collection;
 import java.util.List;
 
 @Service
+@ConditionalOnProperty(name = "app.search.engine.type", havingValue = "postgres")
 public class PostgresTextIndexService implements TextIndexService {
     private static final String INSERT_DOC_QUERY = """
             insert into ftsdocument

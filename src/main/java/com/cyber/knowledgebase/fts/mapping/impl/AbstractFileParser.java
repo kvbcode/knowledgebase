@@ -1,11 +1,11 @@
 package com.cyber.knowledgebase.fts.mapping.impl;
 
-import com.cyber.knowledgebase.fts.mapping.DocumentIndexRequestParser;
+import com.cyber.knowledgebase.fts.mapping.DocumentParser;
 
 import java.net.URI;
 import java.util.List;
 
-public abstract class AbstractDocumentIndexRequestParser implements DocumentIndexRequestParser {
+public abstract class AbstractFileParser implements DocumentParser {
 
     @Override
     public boolean isSupported(URI location) {

@@ -1,6 +1,6 @@
 package com.cyber.knowledgebase.fts.postgres;
 
-import com.cyber.knowledgebase.FtsJdbcApplication;
+import com.cyber.knowledgebase.FtsApplication;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -18,7 +18,7 @@ public class TestFtsJdbcApplication {
 	}
 
 	public static void main(String[] args) {
-		SpringApplication.from(FtsJdbcApplication::main).with(TestFtsJdbcApplication.class).run(args);
+		SpringApplication.from(FtsApplication::main).with(TestFtsJdbcApplication.class).run(args);
 	}
 
 }

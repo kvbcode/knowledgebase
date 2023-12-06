@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Component
-public class HtmlToDocumentIndexRequestParser extends AbstractDocumentIndexRequestParser {
+public class HtmlFileParser extends AbstractFileParser {
     private static final List<String> SUPPORTED_EXTENSIONS = List.of(".htm", ".html");
     private static final String DOC_TYPE = "HTML";
 

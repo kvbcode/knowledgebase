@@ -1,4 +1,4 @@
-package com.cyber.knowledgebase.server.dto;
+package com.cyber.knowledgebase.rest.dto;
 
 import lombok.Getter;
 import lombok.Setter;

@@ -1,8 +1,9 @@
-package com.cyber.knowledgebase.fts.postgres;
+package com.cyber.knowledgebase.fts.service.impl;
 
 import com.cyber.knowledgebase.fts.dto.SearchResult;
 import com.cyber.knowledgebase.fts.service.TextSearchService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.jdbc.core.BeanPropertyRowMapper;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -14,6 +15,7 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 @Service
+@ConditionalOnProperty(name = "app.search.engine.type", havingValue = "postgres")
 public class PostgresTextSearchService implements TextSearchService {
     private static final String FIND_ALL = """
             select id, doc_type, location, modified, title
@@ -40,7 +42,8 @@ public class PostgresTextSearchService implements TextSearchService {
             union all
             select id, doc_type, location, modified, title, '' as header
             from ftsdocument
-            where make_tsvector(title, content) @@ plainto_tsquery(:query);
+            where make_tsvector(title, content) @@ plainto_tsquery(:query)
+            order by modified desc;
             """;
 
     @Autowired

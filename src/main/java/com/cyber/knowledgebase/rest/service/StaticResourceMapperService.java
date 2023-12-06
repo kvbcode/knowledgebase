@@ -1,8 +1,8 @@
-package com.cyber.knowledgebase.server.service;
+package com.cyber.knowledgebase.rest.service;
 
 import com.cyber.knowledgebase.fts.dto.SearchResult;
-import com.cyber.knowledgebase.fts.postgres.PostgresTextSearchService;
-import com.cyber.knowledgebase.server.exception.NotFoundException;
+import com.cyber.knowledgebase.fts.service.impl.PostgresTextSearchService;
+import com.cyber.knowledgebase.rest.exception.NotFoundException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.FileUrlResource;
 import org.springframework.core.io.Resource;
@@ -19,7 +19,7 @@ public class StaticResourceMapperService {
     PostgresTextSearchService searchService;
 
     @Autowired
-    MarkDownService markDownService;
+    MarkDownRenderService markDownRenderService;
 
     public Resource loadRootFile(@PathVariable Long id) {
         SearchResult searchResult = searchService.findById(id)
@@ -29,7 +29,7 @@ public class StaticResourceMapperService {
         Resource urlResource = FileUrlResource.from(URI.create(location));
 
         if (location.endsWith(".md")) {
-            urlResource = markDownService.mapToHtmlResource(urlResource);
+            urlResource = markDownRenderService.mapToHtmlResource(urlResource);
         }
 
         return urlResource;

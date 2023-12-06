@@ -1,7 +1,7 @@
-package com.cyber.knowledgebase.server.advice;
+package com.cyber.knowledgebase.rest.advice;
 
-import com.cyber.knowledgebase.server.dto.ExceptionResponse;
-import com.cyber.knowledgebase.server.exception.NotFoundException;
+import com.cyber.knowledgebase.rest.dto.ExceptionResponse;
+import com.cyber.knowledgebase.rest.exception.NotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;

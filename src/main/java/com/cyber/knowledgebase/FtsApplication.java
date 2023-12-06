@@ -17,13 +17,13 @@ import java.util.concurrent.TimeUnit;
 @Slf4j
 @EnableScheduling
 @SpringBootApplication
-public class FtsJdbcApplication {
+public class FtsApplication {
 
     @Autowired
     FileIndexService fileIndexService;
 
     public static void main(String[] args) {
-        SpringApplication.run(FtsJdbcApplication.class, args);
+        SpringApplication.run(FtsApplication.class, args);
     }
 
     @Scheduled(fixedDelay = 60, timeUnit = TimeUnit.MINUTES)

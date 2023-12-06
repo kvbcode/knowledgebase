@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Component
-public class MarkdownToDocumentIndexRequestParser extends AbstractDocumentIndexRequestParser {
+public class MarkdownFileParser extends AbstractFileParser {
     private static final List<String> SUPPORTED_EXTENSIONS = List.of(".md");
     private static final String DOC_TYPE = "MARKDOWN";
 

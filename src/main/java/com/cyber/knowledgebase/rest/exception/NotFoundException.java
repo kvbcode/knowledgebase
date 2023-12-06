@@ -1,4 +1,4 @@
-package com.cyber.knowledgebase.server.exception;
+package com.cyber.knowledgebase.rest.exception;
 
 public class NotFoundException extends RuntimeException {
 
