@@ -5,6 +5,8 @@ import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -12,6 +14,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Component
+@Order(Ordered.LOWEST_PRECEDENCE)
 public class HtmlFileParser extends AbstractFileParser {
     private static final List<String> SUPPORTED_EXTENSIONS = List.of(".htm", ".html");
     private static final String DOC_TYPE = "HTML";

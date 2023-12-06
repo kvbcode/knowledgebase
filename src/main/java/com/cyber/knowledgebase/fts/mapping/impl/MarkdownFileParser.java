@@ -1,6 +1,8 @@
 package com.cyber.knowledgebase.fts.mapping.impl;
 
 import com.cyber.knowledgebase.fts.dto.DocumentIndexRequest;
+import org.springframework.core.Ordered;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.net.URI;
@@ -8,6 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 @Component
+@Order(Ordered.LOWEST_PRECEDENCE)
 public class MarkdownFileParser extends AbstractFileParser {
     private static final List<String> SUPPORTED_EXTENSIONS = List.of(".md");
     private static final String DOC_TYPE = "MARKDOWN";
